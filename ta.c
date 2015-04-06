@@ -59,15 +59,14 @@ void read_datafile (char *name, int n);
 int brute_force (des_key_manager km, uint64_t pt, uint64_t ct);
 
 /* Tries key and returns the delta */
-double try_key(unsigned long long key, int sbox);
+unsigned long long attack_sbox(unsigned long long key, int sbox);
 
 int
 main (int argc, char **argv)
 {
   int i;              /* Loop index. */
   des_key_manager km; /* Key manager. */
-  double delta = 0, new_delta, old_delta = 0;
-  unsigned long long key, bestkey, finalkey;
+  unsigned long long finalkey;
   int sbox;
 
   /************************************************************************/
@@ -113,22 +112,7 @@ main (int argc, char **argv)
 	/* for every SBox */
 	finalkey = 0ULL;
 	for (sbox = 7; sbox >= 0; sbox--){
-		for (i = 0; i < 64; i++){
-			key = ((unsigned long long) i) << (42 - 6*sbox); 
-			/*printf("Trial #%d --> key: %llx\n", i, key); 	*/
-			new_delta = try_key(finalkey | key, sbox);
-			if (new_delta > delta /*&& new_delta != old_delta*/) {
-				delta = new_delta;
-				bestkey = key;
-			}
-		}
-		/*if (old_delta > delta)
-			sbox+=2;
-		else
-			old_delta = delta;*/
-		printf("Best delta: %f, best key: %llx\n", delta, finalkey | bestkey);	
-		delta = 0;
-		finalkey |= bestkey;
+		finalkey = attack_sbox(finalkey, sbox);
 		printf("Final key: %llx\n", finalkey);
 	}
 	
@@ -167,31 +151,40 @@ main (int argc, char **argv)
   
 }
 
-double try_key(unsigned long long key, int sbox){
+unsigned long long attack_sbox(unsigned long long currentkey, int sbox){
 	uint64_t r16l16;    /* Output of last round, before final permutation. */
 	uint64_t l16;       /* Right half of r16l16. */
 	uint64_t sbo;       /* Output of SBoxes during last round. */
-	int i;              /* Loop index. */
-	double hw0_tsum = 0, hw4_tsum = 0, delta;
-	int hw, count0 = 0, count4 = 0;
-	unsigned long long mask;
+	int i, j;           /* Loop index. */
+	double new_delta, delta;
+	int hw;
+	unsigned long long mask, key, bestkey;
 	pcc_context ctx;
-	ctx = pcc_init(1);
+	ctx = pcc_init(64);		
 	for (i=0; i<n; i++){
-		r16l16 = des_ip (ct[i]); /* undoes final permutation */
-		l16 = des_right_half (r16l16); /* extracts right half */
-		sbo = des_sboxes (des_e (l16) ^ key);  /* computes sboxes, R15 = L16, K16 = 0 */
-		mask = 0xfULL << (28 - 4*sbox);
-		hw = hamming_weight (sbo /*& mask*/); /* & (unsigned long long)mask); */
-		pcc_insert_x(ctx, t[i]);
-		pcc_insert_y(ctx, 0, hw);
+		r16l16 = des_ip (ct[i]); 
+		l16 = des_right_half (r16l16);
+		for (j = 0; j < 64; j++){
+			key = ((unsigned long long) i) << (42 - 6*sbox); 
+			sbo = des_sboxes (des_e (l16) ^ (currentkey | key));
+			/*mask = 0xfULL << (28 - 4*sbox);*/
+			hw = hamming_weight (sbo /*& mask*/);
+			pcc_insert_x(ctx, t[i]);
+			pcc_insert_y(ctx, j, hw);			
+		}
 	}
-	/*delta = abs((double)hw0_tsum/(double)count0 - (double)hw4_tsum/(double)count4);*/
 	pcc_consolidate(ctx);
-	delta = pcc_get_pcc(ctx, 0);
-	/*printf("Selected delta: %f for key %llx\n", delta, key);*/
+	delta = 0;
+	for (j = 0; j < 64; j++){
+		new_delta = pcc_get_pcc(ctx, j);
+		if (new_delta > delta) {
+			delta = new_delta;
+			bestkey = j;
+		}	
+	}
+	bestkey = ((unsigned long long) j) << (42 - 6*sbox); 
 	pcc_free(ctx);
-	return delta;
+	return currentkey | bestkey;
 }
 
 void
