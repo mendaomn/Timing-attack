@@ -1,0 +1,23 @@
+#!/bin/bash
+
+ok=0
+mid=10000
+while [ $mid -le $2 -a $ok -eq 0 ]; do	
+	echo "Trying $mid"
+	./ta $1 $mid | grep -e "Too bad" > /dev/null
+	if [ $? -eq 0 ]; then
+		mid=$(($mid*2))
+	else
+		i=$(($mid/2))
+		while [ $i -le $mid ]; do
+			i=$(($i+20))
+			echo "Trying $i"
+			./ta $1 $i | grep -e "Too bad" > /dev/null
+			if [ $? -ne 0 ]; then
+				mid=$i
+				ok=1
+			fi
+		done
+	fi
+done
+echo "A good value is "$mid
