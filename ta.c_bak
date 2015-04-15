@@ -115,9 +115,9 @@ main (int argc, char **argv)
 	finalkey = 0ULL;
 	for(k=0; k<2; k++){
 	for (sbox = 7; sbox >= 0; sbox--){
-	    mask = 63ULL << (42 - 6*sbox);
-		finalkey &= ~0ULL | mask;
-		/*printf("finalkey:%llx\n", finalkey);*/
+	    mask = 63 << (42 - 6*sbox);
+		finalkey &= ~0ULL - mask;
+		printf("mask:%llx\n", mask);
 		for (i = 0; i < 64; i++){
 			key = ((unsigned long long) i) << (42 - 6*sbox); 
 			new_delta = try_key(finalkey | key, sbox);

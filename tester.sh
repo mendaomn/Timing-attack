@@ -1,23 +1,30 @@
 #!/bin/bash
-
-ok=0
-mid=2000
-while [ $mid -le $2 -a $ok -eq 0 ]; do	
-	echo "Trying $mid"
-	./ta $1 $mid | grep -e "Too bad" > /dev/null
-	if [ $? -eq 0 ]; then
-		mid=$(($mid*2))
-	else
-		i=$(($mid/2))
-		while [ $i -le $mid ]; do
-			i=$(($i+20))
-			echo "Trying $i"
-			./ta $1 $i | grep -e "Too bad" > /dev/null
-			if [ $? -ne 0 ]; then
-				mid=$i
-				ok=1
-			fi
-		done
-	fi
+ 
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied"
+    echo "Usage:"
+    echo "$0 <input file> <n> <start_value>"
+    exit 1
+fi
+ 
+file=$1
+n=$2
+i=$3
+count=0
+nope=0
+ 
+while [ $count -lt 100 ]
+do
+   ./ta $file $i | grep -e "[0-9a-f]" > /dev/null
+   if [ $? -eq 0 ]
+   then
+      ((count++))
+   else
+      count=0
+   fi
+   echo $i $count
+   ((i++))
 done
-echo "A good value is "$mid
+ 
+echo exp=$((i-1))
