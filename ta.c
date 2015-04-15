@@ -113,11 +113,11 @@ main (int argc, char **argv)
 
 	/* for every SBox */
 	finalkey = 0ULL;
-	for(k=0; k<2; k++){
+	for(k=0; k<1; k++){
 	for (sbox = 7; sbox >= 0; sbox--){
 	    mask = 63ULL << (42 - 6*sbox);
-		finalkey &= ~0ULL | mask;
-		/*printf("finalkey:%llx\n", finalkey);*/
+		finalkey &= ~mask; 
+/*		printf("mask    :%012" PRIx64 "\n", ~mask); */
 		for (i = 0; i < 64; i++){
 			key = ((unsigned long long) i) << (42 - 6*sbox); 
 			new_delta = try_key(finalkey | key, sbox);
@@ -128,6 +128,7 @@ main (int argc, char **argv)
 		}
 		delta = 0;
 		finalkey |= bestkey;
+		/*printf("finalkey:%012" PRIx64 "\n", finalkey);*/
 	}
 	}
 
