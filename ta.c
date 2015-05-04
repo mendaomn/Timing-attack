@@ -178,8 +178,8 @@ double try_key(unsigned long long key, int sbox){
 	for (i=0; i<n; i++){
 		r16l16 = des_ip (ct[i]); /* undoes final permutation */
 		l16 = des_right_half (r16l16); /* extracts right half */
-		sbo = des_sboxes (des_e (l16) ^ key);  /* computes sboxes, R15 = L16, K16 = 0 */
-		hw = hamming_weight (sbo); /* & (unsigned long long)mask); */
+		sbo = des_sboxes (des_e (l16) ^ key);  
+		hw = hamming_weight (sbo); 
 		pcc_insert_x(ctx, t[i]);
 		pcc_insert_y(ctx, 0, hw);
 	}
